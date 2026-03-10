@@ -39,17 +39,17 @@ parameters:
 #      * dtype (e.g. int, float, complex, byte, short, xxx_vector, ...)
 #      * vlen (optional - data stream vector length. Default is 1)
 #      * optional (optional - set to 1 for optional inputs. Default is 0)
-inputs:
-- label: In
+#inputs:
+#- label: In
 #  domain: ...
-  dtype: float
+#  dtype: float
 #  vlen: ...
 #  optional: ...
 
 outputs:
 - label: Out
 #  domain: ...
-  dtype: float
+  dtype: complex
 #  vlen: ...
 #  optional: ...
 
