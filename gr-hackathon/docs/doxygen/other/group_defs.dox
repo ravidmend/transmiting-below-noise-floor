@@ -1,0 +1,6 @@
+/*!
+ * \defgroup block GNU Radio HACKATHON C++ Signal Processing Blocks
+ * \brief All C++ blocks that can be used from the HACKATHON GNU Radio
+ *        module are listed here or in the subcategories below.
+ *
+ */
