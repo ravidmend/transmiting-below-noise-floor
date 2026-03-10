@@ -17,8 +17,9 @@ class decoder(gr.sync_block):
     def __init__(self, p0,p1,p2,p3,p4):
         gr.sync_block.__init__(self,
             name="decoder",
-            in_sig=[<+numpy.float32+>, ],
+            in_sig=[numpy.float32, ],
             out_sig=None)
+        
 
 
     def work(self, input_items, output_items):

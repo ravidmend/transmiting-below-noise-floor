@@ -13,10 +13,21 @@ templates:
 #     * dtype (e.g. int, float, complex, byte, short, xxx_vector, ...)
 #     * default
 parameters:
-- id: parametername_replace_me
-  label: FIX ME:
-  dtype: string
-  default: You need to fill in your grc/hackathon_decoder.block.yaml
+- id: p0
+  label: string_input
+  dtype: float
+- id: p1
+  label: string_input
+  dtype: float
+- id: p2
+  label: string_input
+  dtype: float
+- id: p3
+  label: string_input
+  dtype: float
+- id: p4
+  label: string_input
+  dtype: float
 #- id: ...
 #  label: ...
 #  dtype: ...
@@ -29,16 +40,16 @@ parameters:
 #      * vlen (optional - data stream vector length. Default is 1)
 #      * optional (optional - set to 1 for optional inputs. Default is 0)
 inputs:
-#- label: ...
+- label: In
 #  domain: ...
-#  dtype: ...
+  dtype: float
 #  vlen: ...
 #  optional: ...
 
 outputs:
-#- label: ...
+- label: Out
 #  domain: ...
-#  dtype: ...
+  dtype: float
 #  vlen: ...
 #  optional: ...
 
