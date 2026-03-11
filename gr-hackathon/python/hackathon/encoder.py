@@ -59,7 +59,8 @@ class encoder(gr.sync_block):
 
         # make sure we have exactly n samples to output
         if len(data_to_mod) < n:
-            data_to_mod = numpy.concatenate([data_to_mod, numpy.random.randint(0, 2, n - len(data_to_mod))])
+            #data_to_mod = numpy.concatenate([data_to_mod, numpy.random.randint(0, 2, n - len(data_to_mod))])
+            data_to_mod = numpy.concatenate([data_to_mod, -1 * numpy.ones(n - len(data_to_mod))]) # pad with -1 (no signal)
         if len(data_to_mod) > n:
             self.__queue__.put(data_to_mod[n:])
             data_to_mod = data_to_mod[0:n]

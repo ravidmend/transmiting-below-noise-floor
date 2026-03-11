@@ -6,6 +6,7 @@
 #
 # GNU Radio Python Flow Graph
 # Title: Not titled yet
+# Author: sdr
 # GNU Radio version: 3.10.9.2
 
 from PyQt5 import Qt
@@ -26,7 +27,7 @@ import time
 
 
 
-class hackathon_2(gr.top_block, Qt.QWidget):
+class try_only_receving(gr.top_block, Qt.QWidget):
 
     def __init__(self):
         gr.top_block.__init__(self, "Not titled yet", catch_exceptions=True)
@@ -49,7 +50,7 @@ class hackathon_2(gr.top_block, Qt.QWidget):
         self.top_grid_layout = Qt.QGridLayout()
         self.top_layout.addLayout(self.top_grid_layout)
 
-        self.settings = Qt.QSettings("GNU Radio", "hackathon_2")
+        self.settings = Qt.QSettings("GNU Radio", "try_only_receving")
 
         try:
             geometry = self.settings.value("geometry")
@@ -87,24 +88,7 @@ class hackathon_2(gr.top_block, Qt.QWidget):
         self.uhd_usrp_source_1.set_center_freq(center_freq, 0)
         self.uhd_usrp_source_1.set_antenna("RX2", 0)
         self.uhd_usrp_source_1.set_gain(rc_gain, 0)
-        self.uhd_usrp_sink_1 = uhd.usrp_sink(
-            ",".join(("", '')),
-            uhd.stream_args(
-                cpu_format="fc32",
-                args='',
-                channels=list(range(0,1)),
-            ),
-            "",
-        )
-        self.uhd_usrp_sink_1.set_samp_rate(samp_rate)
-        self.uhd_usrp_sink_1.set_time_unknown_pps(uhd.time_spec(0))
-
-        self.uhd_usrp_sink_1.set_center_freq(center_freq, 0)
-        self.uhd_usrp_sink_1.set_antenna("TX/RX", 0)
-        self.uhd_usrp_sink_1.set_gain(tr_gain, 0)
-        self.hackathon_encoder_2 = hackathon.encoder("AAA", pnlen, sps, samp_rate)
-        self.hackathon_decoder_0_0 = hackathon.decoder(pnlen, sps, 10)
-        self.blocks_float_to_complex_0 = blocks.float_to_complex(1)
+        self.hackathon_decoder_0_0 = hackathon.decoder(pnlen, sps, 3)
         self.blocks_complex_to_float_0 = blocks.complex_to_float(1)
 
 
@@ -112,13 +96,11 @@ class hackathon_2(gr.top_block, Qt.QWidget):
         # Connections
         ##################################################
         self.connect((self.blocks_complex_to_float_0, 0), (self.hackathon_decoder_0_0, 0))
-        self.connect((self.blocks_float_to_complex_0, 0), (self.uhd_usrp_sink_1, 0))
-        self.connect((self.hackathon_encoder_2, 0), (self.blocks_float_to_complex_0, 0))
         self.connect((self.uhd_usrp_source_1, 0), (self.blocks_complex_to_float_0, 0))
 
 
     def closeEvent(self, event):
-        self.settings = Qt.QSettings("GNU Radio", "hackathon_2")
+        self.settings = Qt.QSettings("GNU Radio", "try_only_receving")
         self.settings.setValue("geometry", self.saveGeometry())
         self.stop()
         self.wait()
@@ -131,7 +113,6 @@ class hackathon_2(gr.top_block, Qt.QWidget):
     def set_samp_rate(self, samp_rate):
         self.samp_rate = samp_rate
         self.set_bandwidth(self.samp_rate)
-        self.uhd_usrp_sink_1.set_samp_rate(self.samp_rate)
         self.uhd_usrp_source_1.set_samp_rate(self.samp_rate)
 
     def get_tr_gain(self):
@@ -139,7 +120,6 @@ class hackathon_2(gr.top_block, Qt.QWidget):
 
     def set_tr_gain(self, tr_gain):
         self.tr_gain = tr_gain
-        self.uhd_usrp_sink_1.set_gain(self.tr_gain, 0)
 
     def get_sps(self):
         return self.sps
@@ -165,7 +145,6 @@ class hackathon_2(gr.top_block, Qt.QWidget):
 
     def set_center_freq(self, center_freq):
         self.center_freq = center_freq
-        self.uhd_usrp_sink_1.set_center_freq(self.center_freq, 0)
         self.uhd_usrp_source_1.set_center_freq(self.center_freq, 0)
 
     def get_bandwidth(self):
@@ -177,7 +156,7 @@ class hackathon_2(gr.top_block, Qt.QWidget):
 
 
 
-def main(top_block_cls=hackathon_2, options=None):
+def main(top_block_cls=try_only_receving, options=None):
 
     qapp = Qt.QApplication(sys.argv)
 

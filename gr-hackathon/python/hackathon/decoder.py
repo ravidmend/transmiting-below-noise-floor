@@ -87,12 +87,14 @@ class decoder(gr.sync_block):
 
         idx = int(np.argmax(abs_corr))
         peak = abs_corr[idx]
+        
 
         # In noiseless/direct connection this should be very large
         # compared to mismatches, so a simple threshold works
         thresh = 0.8 * np.sum(self.preamble_waveform ** 2)
-
+        thresh = 6
         if peak >= thresh:
+            print(f"[decoder] preamble correlation peak: {peak:.2f} at index {idx}")
             print("[decoder] PREAMBLE DETECTED")
 
             # Remove everything up to the end of the preamble
@@ -139,6 +141,7 @@ class decoder(gr.sync_block):
                 self.done = True
 
     def work(self, input_items, output_items):
+        
         in0 = input_items[0]
 
         if self.done:
@@ -148,12 +151,15 @@ class decoder(gr.sync_block):
         self.buffer = np.concatenate((self.buffer, in0))
 
         while True:
+            # print(2)
             if not self.detected:
                 if not self.detect_preamble():
                     break
                 self.detected = True
 
+            print(3)
             bit = self.decode_one_bit()
+            print(f"[decoder] decoded bit: {bit}")
             if bit is None:
                 break
 
