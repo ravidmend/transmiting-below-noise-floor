@@ -21,7 +21,7 @@ class decoder(gr.sync_block):
         self.recived_amp = recived_amp
 
         # Preamble as bits
-        preamble_bits = np.array([1,0,1,0], dtype=np.uint8)
+        preamble_bits = np.array([1,1,0,1,0,0,0,1,1,0,1,1,1,0,1,0], dtype=np.uint8)
 
         # PN sequence as integers (needed for bitwise operations)
         np.random.seed(0)

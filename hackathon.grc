@@ -137,7 +137,7 @@ blocks:
     bus_structure: null
     coordinate: [352, 488.0]
     rotation: 0
-    state: enabled
+    state: disabled
 - name: hackathon_decoder_0_0
   id: hackathon_decoder
   parameters:
@@ -200,7 +200,7 @@ blocks:
     bus_structure: null
     coordinate: [520, 776.0]
     rotation: 0
-    state: disabled
+    state: enabled
 - name: uhd_usrp_sink_0
   id: uhd_usrp_sink
   parameters:
@@ -477,7 +477,7 @@ blocks:
     bus_structure: null
     coordinate: [552, 288.0]
     rotation: 0
-    state: disabled
+    state: enabled
 - name: uhd_usrp_source_0
   id: uhd_usrp_source
   parameters:
@@ -913,7 +913,7 @@ blocks:
     bus_structure: null
     coordinate: [168, 608.0]
     rotation: 0
-    state: disabled
+    state: enabled
 
 connections:
 - [blocks_throttle2_0, '0', hackathon_decoder_0_0, '0']
