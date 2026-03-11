@@ -4,7 +4,7 @@ category: '[hackathon]'
 
 templates:
   imports: from gnuradio import hackathon
-  make: hackathon.encoder(${p0}, ${p1}, ${p2}, ${p3}, ${p4})
+  make: hackathon.encoder()
 
 #  Make one 'parameters' list entry for every parameter you want settable from the GUI.
 #     Keys include:
@@ -12,22 +12,22 @@ templates:
 #     * label (label shown in the GUI)
 #     * dtype (e.g. int, float, complex, byte, short, xxx_vector, ...)
 #     * default
-parameters:
-- id: p0
-  label: string_input
-  dtype: float
-- id: p1
-  label: string_input
-  dtype: float
-- id: p2
-  label: string_input
-  dtype: float
-- id: p3
-  label: string_input
-  dtype: float
-- id: p4
-  label: string_input
-  dtype: float
+# parameters:
+# - id: p0
+#   label: string_input
+#   dtype: float
+# - id: p1
+#   label: string_input
+#   dtype: float
+# - id: p2
+#   label: string_input
+#   dtype: float
+# - id: p3
+#   label: string_input
+#   dtype: float
+# - id: p4
+#   label: string_input
+#   dtype: float
 #- id: ...
 #  label: ...
 #  dtype: ...
@@ -39,6 +39,7 @@ parameters:
 #      * dtype (e.g. int, float, complex, byte, short, xxx_vector, ...)
 #      * vlen (optional - data stream vector length. Default is 1)
 #      * optional (optional - set to 1 for optional inputs. Default is 0)
+
 #inputs:
 #- label: In
 #  domain: ...
@@ -49,7 +50,7 @@ parameters:
 outputs:
 - label: Out
 #  domain: ...
-  dtype: complex
+  dtype: float
 #  vlen: ...
 #  optional: ...
 
