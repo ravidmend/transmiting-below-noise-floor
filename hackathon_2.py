@@ -63,7 +63,7 @@ class hackathon_2(gr.top_block, Qt.QWidget):
         ##################################################
         self.samp_rate = samp_rate = int(1e6)
         self.tr_gain = tr_gain = 20
-        self.sps = sps = int(2)
+        self.sps = sps = int(4)
         self.rc_gain = rc_gain = 20
         self.pn_len = pn_len = int(1e3)
         self.center_freq = center_freq = 434e6

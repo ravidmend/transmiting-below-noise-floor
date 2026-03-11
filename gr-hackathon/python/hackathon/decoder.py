@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+# #!/usr/bin/env python
+# # -*- coding: utf-8 -*-
 
 import numpy as np
 from gnuradio import gr
@@ -21,7 +21,7 @@ class decoder(gr.sync_block):
         self.recived_amp = recived_amp
 
         # Preamble as bits
-        preamble_bits = np.array([1,1,0,1,0,0,0,1,1,0,1,1,1,0,1,0], dtype=np.uint8)
+        preamble_bits = np.array([1,0,1,0], dtype=np.uint8)
 
         # PN sequence as integers (needed for bitwise operations)
         np.random.seed(0)
@@ -62,7 +62,8 @@ class decoder(gr.sync_block):
         abs_corr = np.abs(corr)
         peak = np.max(abs_corr)
         threshold = 0.8 * self.recived_amp * self.preamble_len
-
+        threshold = 40000
+        print(f"Correlation peak: {peak:.2f}, Threshold: {threshold:.2f}")
         if peak > threshold:
             idx = np.argmax(abs_corr)
             print("PREAMBLE DETECTED")
@@ -159,3 +160,83 @@ class decoder(gr.sync_block):
             self.process_bit(bit)
 
         return len(in0)
+
+
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# import numpy as np
+# from gnuradio import gr
+# import os
+
+# class decoder(gr.sync_block):
+#     """
+#     Simple decoder that computes correlation with preamble and saves to file.
+#     """
+
+#     def __init__(self, pn_len, sps,recived_amp):
+#         gr.sync_block.__init__(
+#             self,
+#             name="decoder",
+#             in_sig=[np.complex64],
+#             out_sig=None,
+#         )
+#         preamble_file="correlation.npy"
+#         # --- Validate file path ---
+#         if not isinstance(preamble_file, (str, bytes, os.PathLike)):
+#             raise ValueError("preamble_file must be a string or PathLike object")
+#         self.corr_file = str(preamble_file)
+
+#         # --- Parameters ---
+#         self.sps = sps
+#         self.pn_len = pn_len
+#         self.buffer = np.array([], dtype=np.complex64)
+
+#         # --- Preamble bits ---
+#         preamble_bits = np.array([1,0,1,0], dtype=np.uint8)
+
+#         # --- PN sequence ---
+#         np.random.seed(0)
+#         pn_bits = np.random.randint(0, 2, pn_len).astype(np.uint8)
+
+#         # --- Spread preamble ---
+#         spreaded = np.repeat(preamble_bits, pn_len) ^ np.tile(pn_bits, len(preamble_bits))
+
+#         # --- BPSK modulation: 0 -> -1, 1 -> +1 ---
+#         modulated = 2*spreaded - 1
+
+#         # --- Pulse shaping: repeat each sample by sps ---
+#         self.preamble = np.repeat(modulated, sps)
+#         self.preamble_len = len(self.preamble)
+
+#         # --- Store correlation results ---
+#         self.all_corrs = []
+
+#     # --- Correlation utility ---
+#     def correlate(self, x, ref):
+#         return np.correlate(x, np.conj(ref), mode="full")
+
+#     # --- GNU Radio work method ---
+#     def work(self, input_items, output_items):
+#         in0 = input_items[0]
+#         self.buffer = np.concatenate((self.buffer, in0))
+
+#         # Compute correlation only if we have enough samples
+#         if len(self.buffer) >= self.preamble_len:
+#             corr = self.correlate(self.buffer, self.preamble)
+#             abs_corr = np.abs(corr)
+#             self.all_corrs.extend(abs_corr.tolist())
+
+#         # Keep only last few samples to avoid memory growth
+#         self.buffer = self.buffer[-(2*self.preamble_len):]
+
+#         # Save correlation to file safely
+#         try:
+#             np.save(self.corr_file, np.array(self.all_corrs, dtype=np.float32))
+#         except Exception as e:
+#             print(f"Warning: could not save correlation file: {e}")
+
+#         return len(in0)
