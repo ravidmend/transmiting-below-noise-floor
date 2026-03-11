@@ -21,7 +21,6 @@ from argparse import ArgumentParser
 from gnuradio.eng_arg import eng_float, intx
 from gnuradio import eng_notation
 from gnuradio import hackathon
-import sip
 
 
 
@@ -61,9 +60,10 @@ class hackathon_2(gr.top_block, Qt.QWidget):
         # Variables
         ##################################################
         self.samp_rate = samp_rate = int(1e6)
-        self.tr_gain = tr_gain = 0
+        self.tr_gain = tr_gain = 30
+        self.sps = sps = int(4)
         self.rc_gain = rc_gain = 20
-        self.pnlen = pnlen = int(1e3)
+        self.pn_len = pn_len = int(1e3)
         self.center_freq = center_freq = 434e6
         self.bandwidth = bandwidth = samp_rate
 
@@ -71,26 +71,8 @@ class hackathon_2(gr.top_block, Qt.QWidget):
         # Blocks
         ##################################################
 
-        self.qtgui_sink_x_0_1 = qtgui.sink_c(
-            1024, #fftsize
-            window.WIN_BLACKMAN_hARRIS, #wintype
-            0, #fc
-            samp_rate, #bw
-            "tran", #name
-            True, #plotfreq
-            True, #plotwaterfall
-            True, #plottime
-            True, #plotconst
-            None # parent
-        )
-        self.qtgui_sink_x_0_1.set_update_time(1.0/10)
-        self._qtgui_sink_x_0_1_win = sip.wrapinstance(self.qtgui_sink_x_0_1.qwidget(), Qt.QWidget)
-
-        self.qtgui_sink_x_0_1.enable_rf_freq(False)
-
-        self.top_layout.addWidget(self._qtgui_sink_x_0_1_win)
-        self.hackathon_encoder_2_0 = hackathon.encoder("Hey"*1000, pnlen, int(4), samp_rate)
-        self.hackathon_decoder_0_0 = hackathon.decoder(1/samp_rate, int(pnlen), int(samp_rate))
+        self.hackathon_encoder_2_0 = hackathon.encoder("Hey"*1000, pn_len, sps)
+        self.hackathon_decoder_0_0 = hackathon.decoder(pn_len, sps, 1)
         self.blocks_throttle2_0 = blocks.throttle( gr.sizeof_gr_complex*1, samp_rate, True, 0 if "auto" == "auto" else max( int(float(0.1) * samp_rate) if "auto" == "time" else int(0.1), 1) )
 
 
@@ -98,7 +80,6 @@ class hackathon_2(gr.top_block, Qt.QWidget):
         # Connections
         ##################################################
         self.connect((self.blocks_throttle2_0, 0), (self.hackathon_decoder_0_0, 0))
-        self.connect((self.blocks_throttle2_0, 0), (self.qtgui_sink_x_0_1, 0))
         self.connect((self.hackathon_encoder_2_0, 0), (self.blocks_throttle2_0, 0))
 
 
@@ -117,7 +98,6 @@ class hackathon_2(gr.top_block, Qt.QWidget):
         self.samp_rate = samp_rate
         self.set_bandwidth(self.samp_rate)
         self.blocks_throttle2_0.set_sample_rate(self.samp_rate)
-        self.qtgui_sink_x_0_1.set_frequency_range(0, self.samp_rate)
 
     def get_tr_gain(self):
         return self.tr_gain
@@ -125,17 +105,23 @@ class hackathon_2(gr.top_block, Qt.QWidget):
     def set_tr_gain(self, tr_gain):
         self.tr_gain = tr_gain
 
+    def get_sps(self):
+        return self.sps
+
+    def set_sps(self, sps):
+        self.sps = sps
+
     def get_rc_gain(self):
         return self.rc_gain
 
     def set_rc_gain(self, rc_gain):
         self.rc_gain = rc_gain
 
-    def get_pnlen(self):
-        return self.pnlen
+    def get_pn_len(self):
+        return self.pn_len
 
-    def set_pnlen(self, pnlen):
-        self.pnlen = pnlen
+    def set_pn_len(self, pn_len):
+        self.pn_len = pn_len
 
     def get_center_freq(self):
         return self.center_freq

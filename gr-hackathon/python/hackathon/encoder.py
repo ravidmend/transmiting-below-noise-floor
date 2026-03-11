@@ -8,7 +8,7 @@ from queue import Queue
 
 class encoder(gr.sync_block):
 
-    def __init__(self, string_input, pn_len, sps, fs):
+    def __init__(self, string_input, pn_len, sps):
         gr.sync_block.__init__(
             self,
             name="encoder",
@@ -16,22 +16,19 @@ class encoder(gr.sync_block):
             out_sig=[np.complex64],
         )
 
-        self.string_input = string_input
-        self.sps = sps
-        self.fs = fs
-        self.pn_len = pn_len
-
         np.random.seed(0)
-        self.pn = np.random.randint(0, 2, self.pn_len).astype(np.float32)
+        pn = np.random.randint(0, 2, pn_len).astype(np.float32)
 
-        self.preamble = [1,0,1,0]
+        preamble = [1,0,1,0]
 
-        self.pn_pulse = np.repeat(self.pn, self.sps)
-        self.preamble = np.tile(self.pn_pulse, self.preamble_reps)
+        bits_to_send = np.concatenate([preamble,self.string_to_bits(string_input)])
 
-        self.queue = Queue()
-        self.generated = False
+        spreaded_bits = self.spread_bits(bits_to_send, pn, pn_len)
 
+        modulated_bits = self.bpsk_mod(spreaded_bits)
+
+        pulse_shaped = np.repeat(modulated_bits, sps) 
+        self.signal = pulse_shaped
 
 
     def string_to_bits(self, string):
@@ -51,75 +48,31 @@ class encoder(gr.sync_block):
         duplicated = np.repeat(data_bits, pn_len)
 
         # repeat the PN sequence to match the length
-        pn_repeated = np.tile(pn_bits, len(duplicated) // len(pn_bits))
+        pn_repeated = np.tile(pn_bits,len(pn_bits))
 
         # XOR
         result = np.bitwise_xor(duplicated, pn_repeated)
 
         return result
+    
 
-    def spread(self, bits):
-
-        symbols = 2 * bits - 1  # BPSK
-
-        chips = []
-
-        for s in symbols:
-            chips.append(s * self.pn)
-
-        chips = np.concatenate(chips)
-
-        samples = np.repeat(chips, self.sps)
-
-        return samples
+    def bpsk_mod(bits: np.ndarray) -> np.ndarray:
+        bits = np.asarray(bits)
+        return 2*bits - 1
 
 
+def work(self, input_items, output_items):
+    out = output_items[0]
+    n = len(out)
 
+    available = len(self.signal)
 
-    def generate_packet(self):
+    if available >= n:
+        out[:] = self.signal[:n]
+        self.signal = self.signal[n:]
+    else:
+        out[:available] = self.signal
+        out[available:] = 0
+        self.signal = np.array([], dtype=self.signal.dtype)
 
-        bits = self.string_to_bits(self.string_input)
-
-        payload = self.spread(bits)
-
-        packet = np.concatenate([self.preamble, payload])
-
-        return packet.astype(np.complex64)
-
-
-    def work(self, input_items, output_items):
-
-        out = output_items[0]
-        n = len(out)
-
-        if not self.generated:
-
-            packet = self.generate_packet()
-
-            self.queue.put(packet)
-
-            self.generated = True
-
-
-        if self.queue.empty():
-
-            out[:] = np.zeros(n, dtype=np.complex64)
-
-            return n
-
-
-        data = self.queue.get()
-
-        if len(data) > n:
-
-            out[:] = data[:n]
-
-            self.queue.put(data[n:])
-
-        else:
-
-            out[:len(data)] = data
-            out[len(data):] = 0
-
-
-        return n
+    return n
