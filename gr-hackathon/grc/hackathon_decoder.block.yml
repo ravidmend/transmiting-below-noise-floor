@@ -4,7 +4,7 @@ category: '[hackathon]'
 
 templates:
   imports: from gnuradio import hackathon
-  make: hackathon.decoder(${Ts}, ${pn_len}, ${fs})
+  make: hackathon.decoder(${pn_length}, ${sps}, ${msg_len})
 
 #  Make one 'parameters' list entry for every parameter you want settable from the GUI.
 #     Keys include:
@@ -13,18 +13,17 @@ templates:
 #     * dtype (e.g. int, float, complex, byte, short, xxx_vector, ...)
 #     * default
 parameters:
-- id: Ts
-  label: Ts
+- id: pn_length
+  label: pn_length  
   dtype: float
-- id: pn_len
-  label: pn_len
+- id: sps
+  label: sps
+  dtype: float
+- id: msg_len
+  label: msg_len
   dtype: int
-- id: fs
-  label: fs
-  dtype: int  
-  
-  
-  
+
+
 #- id: ...
 #  label: ...
 #  dtype: ...
@@ -38,7 +37,7 @@ parameters:
 #      * optional (optional - set to 1 for optional inputs. Default is 0)
 inputs:
 - label: In
-  dtype: complex
+  dtype: float
 
 
 

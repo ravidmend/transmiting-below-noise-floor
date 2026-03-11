@@ -5,150 +5,295 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import numpy as np
 from gnuradio import gr
 
+
 class decoder(gr.sync_block):
     """
-    docstring for block decoder
+    Decoder for the given encoder.
+    Input: float32 stream from the encoder
+    Output: no output (sink) - prints recovered string
     """
-    def __init__(self, Ts, pn_len, fs):
-        gr.sync_block.__init__(self,
+    def __init__(self, pn_length, sps, msg_len):
+        gr.sync_block.__init__(
+            self,
             name="decoder",
-            in_sig=[np.complex64],
-            out_sig=None)
+            in_sig=[np.float32],
+            out_sig=None
+        )
 
-        self.Ts = Ts
-        self.fs = fs
+        self.pn_length = int(pn_length)
+        self.sps = int(sps)
+        self.msg_len = int(msg_len)
 
-        sps = 4
-        preamble_reps = 5
+        # Must match encoder exactly
+        self.pn_bits = np.array([1] * self.pn_length, dtype=np.uint8)
+        self.preamble_bits = np.array([1, 1, 1, 1, 1], dtype=np.uint8)
 
-        self.sps = sps
-        self.preamble_reps = preamble_reps
+        # Internal buffer
+        self.buffer = np.array([], dtype=np.float32)
 
-        # relative detection threshold
-        self.k_thresh = 6
-
-        pn_sequence = np.array([1]*pn_len)
-        self.pn = np.array(pn_sequence, dtype=np.float32)
-        self.pn_len = len(self.pn)
-
-        # rectangular pulse shaping
-        self.pn_pulse = np.repeat(self.pn, self.sps).astype(np.complex64)
-
-        # PREAMBLE = PN repeated N times
-        self.preamble_pulse = np.tile(self.pn_pulse, self.preamble_reps)
-
-        # queue buffer
-        self.buffer = np.array([], dtype=np.complex64)
-
+        # Decoder state
         self.detected = False
-        self.symbol_len = len(self.pn_pulse)
-        self.preamble_len = len(self.preamble_pulse)
-
-        # bit/char storage
+        self.done = False
         self.bit_buffer = []
         self.char_buffer = ""
 
+        # Build symbol templates
+        # Encoder does:
+        # spread_bit = bit XOR pn_bit
+        # then 0 -> -1, 1 -> +1
+        #
+        # So template for bit=0 is:
+        #   bpsk(pn_bits)
+        #
+        # template for bit=1 is:
+        #   negative of that
+        self.symbol0 = self.build_symbol_template(bit=0)
+        self.symbol1 = self.build_symbol_template(bit=1)
 
-    def correlate(self, x, ref):
-        return np.correlate(x, np.conj(ref), mode='valid')
+        self.symbol_len = len(self.symbol0)
 
+        # Preamble waveform = 5 symbols of bit=1
+        self.preamble_waveform = np.tile(self.symbol1, len(self.preamble_bits))
+        self.preamble_len = len(self.preamble_waveform)
+
+    def build_symbol_template(self, bit):
+        # Spread one bit with PN exactly like encoder
+        bit_array = np.array([bit], dtype=np.uint8)
+
+        repeated_bit = np.repeat(bit_array, self.pn_length)
+        spread_bits = repeated_bit ^ self.pn_bits
+
+        # BPSK map: 0 -> -1, 1 -> +1
+        bpsk = spread_bits.astype(np.float32)
+        bpsk[bpsk == 0] = -1.0
+
+        # Rectangular pulse shaping
+        pulse = np.repeat(bpsk, self.sps).astype(np.float32)
+
+        return pulse
 
     def detect_preamble(self):
-
         if len(self.buffer) < self.preamble_len:
             return False
 
-        corr = self.correlate(self.buffer, self.preamble_pulse)
-
+        corr = np.correlate(self.buffer, self.preamble_waveform, mode='valid')
         abs_corr = np.abs(corr)
 
-        peak = np.max(abs_corr)
-        noise = np.mean(abs_corr)
-        print(f"peak: {peak:.2f}, noise: {noise:.2f}, ratio: {peak/noise:.2f}")
+        idx = int(np.argmax(abs_corr))
+        peak = abs_corr[idx]
 
-        # if peak > self.k_thresh * noise:
-        if peak > 10000:
+        # In noiseless/direct connection this should be very large
+        # compared to mismatches, so a simple threshold works
+        thresh = 0.8 * np.sum(self.preamble_waveform ** 2)
 
-            idx = np.argmax(abs_corr)
-            print(f"preamble detected at index {idx}, correlation value: {corr[idx]:.2f}")
-            print("PREAMBLE DETECTED")
+        if peak >= thresh:
+            print("[decoder] PREAMBLE DETECTED")
 
-            # align buffer after preamble
+            # Remove everything up to the end of the preamble
             self.buffer = self.buffer[idx + self.preamble_len:]
-
             return True
 
-        # prevent unbounded growth
-        self.buffer = self.buffer[-self.preamble_len:]
+        # Keep only enough trailing samples
+        if len(self.buffer) > self.preamble_len:
+            self.buffer = self.buffer[-self.preamble_len:]
 
         return False
 
+    def decode_one_bit(self):
+        if len(self.buffer) < self.symbol_len:
+            return None
+
+        sym = self.buffer[:self.symbol_len]
+        self.buffer = self.buffer[self.symbol_len:]
+
+        # Compare correlation with bit-0 and bit-1 templates
+        score0 = np.dot(sym, self.symbol0)
+        score1 = np.dot(sym, self.symbol1)
+
+        bit = 0 if score0 > score1 else 1
+        return bit
 
     def process_bit(self, bit):
-
         self.bit_buffer.append(bit)
 
         if len(self.bit_buffer) == 8:
-
             value = 0
             for b in self.bit_buffer:
                 value = (value << 1) | b
 
             char = chr(value)
-
-            print("char detected:", char)
-
             self.char_buffer += char
-
-            print("message so far:", self.char_buffer)
-
             self.bit_buffer = []
 
+            print(f"[decoder] char detected: {char}")
+            print(f"[decoder] message so far: {self.char_buffer}")
 
-    def decode_symbol(self):
-
-        if len(self.buffer) < self.symbol_len:
-            return None
-
-        sym = self.buffer[:self.symbol_len]
-
-        val = np.vdot(self.pn_pulse, sym)
-
-        self.buffer = self.buffer[self.symbol_len:]
-
-        bit = 1 if np.real(val) > 0 else 0
-
-        return bit
-
+            if len(self.char_buffer) == self.msg_len:
+                print(f"\n[decoder] FINAL MESSAGE: {self.char_buffer}\n")
+                self.done = True
 
     def work(self, input_items, output_items):
-
         in0 = input_items[0]
 
-        # append incoming samples
+        if self.done:
+            return len(in0)
+
+        # Append incoming samples
         self.buffer = np.concatenate((self.buffer, in0))
 
         while True:
-
             if not self.detected:
-
                 if not self.detect_preamble():
                     break
-
                 self.detected = True
 
-            bit = self.decode_symbol()
-
+            bit = self.decode_one_bit()
             if bit is None:
                 break
 
-            print("bit is:", bit)
-
+            #print(f"[decoder] bit: {bit}")
             self.process_bit(bit)
 
+            if self.done:
+                break
+
         return len(in0)
+
+
+
+
+
+
+
+
+# import numpy as np
+# from gnuradio import gr
+# from queue import Queue
+
+# class decoder(gr.sync_block):
+#     """
+#     docstring for block decoder
+#     """
+#     def __init__(self, fs, pn_len, sps):
+#         gr.sync_block.__init__(self,
+#             name="decoder",
+#             in_sig=[np.complex64],
+#             out_sig=None)
+
+#         self.__pn__ = np.array([1]*int(pn_len)) # example pn sequence
+#         self.__queue__ = Queue()
+#         self.__fs__ = fs
+#         self.__sps__ = sps
+
+
+
+
+
+
+
+
+
+#     def correlate(self, x, ref):
+#         return np.correlate(x, np.conj(ref), mode='valid')
+
+
+#     def detect_preamble(self):
+
+#         if len(self.buffer) < self.preamble_len:
+#             return False
+
+#         corr = self.correlate(self.buffer, self.preamble_pulse)
+
+#         abs_corr = np.abs(corr)
+
+#         peak = np.max(abs_corr)
+#         noise = np.mean(abs_corr)
+#         print(f"peak: {peak:.2f}, noise: {noise:.2f}, ratio: {peak/noise:.2f}")
+
+#         # if peak > self.k_thresh * noise:
+#         if peak > 10000:
+
+#             idx = np.argmax(abs_corr)
+#             print(f"preamble detected at index {idx}, correlation value: {corr[idx]:.2f}")
+#             print("PREAMBLE DETECTED")
+
+#             # align buffer after preamble
+#             self.buffer = self.buffer[idx + self.preamble_len:]
+
+#             return True
+
+#         # prevent unbounded growth
+#         self.buffer = self.buffer[-self.preamble_len:]
+
+#         return False
+
+
+#     def process_bit(self, bit):
+
+#         self.bit_buffer.append(bit)
+
+#         if len(self.bit_buffer) == 8:
+
+#             value = 0
+#             for b in self.bit_buffer:
+#                 value = (value << 1) | b
+
+#             char = chr(value)
+
+#             print("char detected:", char)
+
+#             self.char_buffer += char
+
+#             print("message so far:", self.char_buffer)
+
+#             self.bit_buffer = []
+
+
+#     def decode_symbol(self):
+
+#         if len(self.buffer) < self.symbol_len:
+#             return None
+
+#         sym = self.buffer[:self.symbol_len]
+
+#         val = np.vdot(self.pn_pulse, sym)
+
+#         self.buffer = self.buffer[self.symbol_len:]
+
+#         bit = 1 if np.real(val) > 0 else 0
+
+#         return bit
+
+
+#     def work(self, input_items, output_items):
+
+#         in0 = input_items[0]
+
+#         # append incoming samples
+#         self.buffer = np.concatenate((self.buffer, in0))
+
+#         while True:
+
+#             if not self.detected:
+
+#                 if not self.detect_preamble():
+#                     break
+
+#                 self.detected = True
+
+#             bit = self.decode_symbol()
+
+#             if bit is None:
+#                 break
+
+#             print("bit is:", bit)
+
+#             self.process_bit(bit)
+
+#         return len(in0)

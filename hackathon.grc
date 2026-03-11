@@ -118,9 +118,9 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [664, 440.0]
+    coordinate: [616, 368.0]
     rotation: 0
-    state: disabled
+    state: enabled
 - name: blocks_float_to_complex_0
   id: blocks_float_to_complex
   parameters:
@@ -136,53 +136,42 @@ blocks:
     bus_structure: null
     coordinate: [848, 88.0]
     rotation: 0
-    state: disabled
-- name: blocks_float_to_complex_0_0
-  id: blocks_float_to_complex
+    state: enabled
+- name: blocks_throttle2_0
+  id: blocks_throttle2
   parameters:
     affinity: ''
     alias: ''
     comment: ''
+    ignoretag: 'True'
+    limit: auto
+    maximum: '0.1'
     maxoutbuf: '0'
     minoutbuf: '0'
+    samples_per_second: samp_rate
+    type: float
     vlen: '1'
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [744, 232.0]
-    rotation: 0
-    state: enabled
-- name: hackathon_decoder_0
-  id: hackathon_decoder
-  parameters:
-    Ts: 1/samp_rate
-    affinity: ''
-    alias: ''
-    comment: ''
-    fs: int(samp_rate)
-    pn_len: int(pnlen)
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [480, 368.0]
+    coordinate: [624, 256.0]
     rotation: 0
     state: disabled
 - name: hackathon_decoder_0_0
   id: hackathon_decoder
   parameters:
-    Ts: 1/samp_rate
     affinity: ''
     alias: ''
     comment: ''
-    fs: int(samp_rate)
-    pn_len: int(pnlen)
+    msg_len: '3'
+    pn_length: 1e3
+    sps: '4'
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [984, 168.0]
+    coordinate: [856, 232.0]
     rotation: 0
     state: enabled
 - name: hackathon_encoder_2
@@ -203,7 +192,7 @@ blocks:
     bus_structure: null
     coordinate: [680, 88.0]
     rotation: 0
-    state: disabled
+    state: enabled
 - name: hackathon_encoder_2_0
   id: hackathon_encoder
   parameters:
@@ -220,9 +209,9 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [568, 224.0]
+    coordinate: [392, 232.0]
     rotation: 0
-    state: enabled
+    state: disabled
 - name: qtgui_freq_sink_x_0
   id: qtgui_freq_sink_x
   parameters:
@@ -330,7 +319,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1160, 176.0]
+    coordinate: [1312, 360.0]
     rotation: 0
     state: disabled
 - name: qtgui_sink_x_0_0
@@ -359,7 +348,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [400, 216.0]
+    coordinate: [264, 328.0]
     rotation: 0
     state: disabled
 - name: qtgui_sink_x_0_1
@@ -388,9 +377,9 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [952, 272.0]
+    coordinate: [1024, 320.0]
     rotation: 0
-    state: enabled
+    state: disabled
 - name: qtgui_time_sink_x_0_0
   id: qtgui_time_sink_x
   parameters:
@@ -762,9 +751,9 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1112, 16.0]
+    coordinate: [1088, 32.0]
     rotation: 0
-    state: disabled
+    state: enabled
 - name: uhd_usrp_source_1
   id: uhd_usrp_source
   parameters:
@@ -1198,18 +1187,18 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [104, 224.0]
+    coordinate: [272, 320.0]
     rotation: 0
-    state: disabled
+    state: enabled
 
 connections:
+- [blocks_complex_to_float_0, '0', hackathon_decoder_0_0, '0']
 - [blocks_float_to_complex_0, '0', qtgui_sink_x_0, '0']
 - [blocks_float_to_complex_0, '0', uhd_usrp_sink_1, '0']
-- [blocks_float_to_complex_0_0, '0', hackathon_decoder_0_0, '0']
-- [blocks_float_to_complex_0_0, '0', qtgui_sink_x_0_1, '0']
+- [blocks_throttle2_0, '0', hackathon_decoder_0_0, '0']
 - [hackathon_encoder_2, '0', blocks_float_to_complex_0, '0']
-- [hackathon_encoder_2_0, '0', blocks_float_to_complex_0_0, '0']
-- [uhd_usrp_source_1, '0', hackathon_decoder_0, '0']
+- [hackathon_encoder_2_0, '0', blocks_throttle2_0, '0']
+- [uhd_usrp_source_1, '0', blocks_complex_to_float_0, '0']
 - [uhd_usrp_source_1, '0', qtgui_sink_x_0_0, '0']
 
 metadata:
