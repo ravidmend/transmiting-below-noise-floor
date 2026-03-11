@@ -136,6 +136,22 @@ blocks:
     bus_structure: null
     coordinate: [848, 88.0]
     rotation: 0
+    state: disabled
+- name: blocks_float_to_complex_0_0
+  id: blocks_float_to_complex
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [744, 232.0]
+    rotation: 0
     state: enabled
 - name: hackathon_decoder_0
   id: hackathon_decoder
@@ -150,7 +166,23 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [416, 416.0]
+    coordinate: [480, 368.0]
+    rotation: 0
+    state: disabled
+- name: hackathon_decoder_0_0
+  id: hackathon_decoder
+  parameters:
+    Ts: 1/samp_rate
+    affinity: ''
+    alias: ''
+    comment: ''
+    fs: int(samp_rate)
+    pn_len: int(pnlen)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [984, 168.0]
     rotation: 0
     state: enabled
 - name: hackathon_encoder_2
@@ -170,6 +202,25 @@ blocks:
     bus_source: false
     bus_structure: null
     coordinate: [680, 88.0]
+    rotation: 0
+    state: disabled
+- name: hackathon_encoder_2_0
+  id: hackathon_encoder
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    fs: samp_rate
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    pn_length: pnlen
+    sps: '4'
+    string_input: '"Hey"'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [568, 224.0]
     rotation: 0
     state: enabled
 - name: qtgui_freq_sink_x_0
@@ -250,7 +301,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [920, 376.0]
+    coordinate: [944, 416.0]
     rotation: 0
     state: disabled
 - name: qtgui_sink_x_0
@@ -279,9 +330,9 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1072, 208.0]
+    coordinate: [1160, 176.0]
     rotation: 0
-    state: enabled
+    state: disabled
 - name: qtgui_sink_x_0_0
   id: qtgui_sink_x
   parameters:
@@ -309,6 +360,35 @@ blocks:
     bus_source: false
     bus_structure: null
     coordinate: [400, 216.0]
+    rotation: 0
+    state: disabled
+- name: qtgui_sink_x_0_1
+  id: qtgui_sink_x
+  parameters:
+    affinity: ''
+    alias: ''
+    bw: samp_rate
+    comment: ''
+    fc: '0'
+    fftsize: '1024'
+    gui_hint: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    name: '"tran"'
+    plotconst: 'True'
+    plotfreq: 'True'
+    plottime: 'True'
+    plotwaterfall: 'True'
+    rate: '10'
+    showports: 'False'
+    showrf: 'False'
+    type: complex
+    wintype: window.WIN_BLACKMAN_hARRIS
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [952, 272.0]
     rotation: 0
     state: enabled
 - name: qtgui_time_sink_x_0_0
@@ -405,7 +485,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [792, 272.0]
+    coordinate: [800, 392.0]
     rotation: 0
     state: disabled
 - name: uhd_usrp_sink_1
@@ -684,7 +764,7 @@ blocks:
     bus_structure: null
     coordinate: [1112, 16.0]
     rotation: 0
-    state: enabled
+    state: disabled
 - name: uhd_usrp_source_1
   id: uhd_usrp_source
   parameters:
@@ -1120,12 +1200,15 @@ blocks:
     bus_structure: null
     coordinate: [104, 224.0]
     rotation: 0
-    state: enabled
+    state: disabled
 
 connections:
 - [blocks_float_to_complex_0, '0', qtgui_sink_x_0, '0']
 - [blocks_float_to_complex_0, '0', uhd_usrp_sink_1, '0']
+- [blocks_float_to_complex_0_0, '0', hackathon_decoder_0_0, '0']
+- [blocks_float_to_complex_0_0, '0', qtgui_sink_x_0_1, '0']
 - [hackathon_encoder_2, '0', blocks_float_to_complex_0, '0']
+- [hackathon_encoder_2_0, '0', blocks_float_to_complex_0_0, '0']
 - [uhd_usrp_source_1, '0', hackathon_decoder_0, '0']
 - [uhd_usrp_source_1, '0', qtgui_sink_x_0_0, '0']
 

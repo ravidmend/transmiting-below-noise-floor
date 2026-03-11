@@ -69,11 +69,13 @@ class decoder(gr.sync_block):
 
         peak = np.max(abs_corr)
         noise = np.mean(abs_corr)
+        print(f"peak: {peak:.2f}, noise: {noise:.2f}, ratio: {peak/noise:.2f}")
 
-        if peak > self.k_thresh * noise:
+        # if peak > self.k_thresh * noise:
+        if peak > 10000:
 
             idx = np.argmax(abs_corr)
-
+            print(f"preamble detected at index {idx}, correlation value: {corr[idx]:.2f}")
             print("PREAMBLE DETECTED")
 
             # align buffer after preamble
