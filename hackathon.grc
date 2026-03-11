@@ -61,7 +61,7 @@ blocks:
   id: variable
   parameters:
     comment: ''
-    value: 1e3
+    value: int(1e3)
   states:
     bus_sink: false
     bus_source: false
@@ -85,7 +85,7 @@ blocks:
   id: variable
   parameters:
     comment: ''
-    value: 1e6
+    value: int(1e6)
   states:
     bus_sink: false
     bus_source: false
@@ -137,20 +137,25 @@ blocks:
     coordinate: [848, 88.0]
     rotation: 0
     state: disabled
-- name: blocks_float_to_complex_0_0
-  id: blocks_float_to_complex
+- name: blocks_throttle2_0
+  id: blocks_throttle2
   parameters:
     affinity: ''
     alias: ''
     comment: ''
+    ignoretag: 'True'
+    limit: auto
+    maximum: '0.1'
     maxoutbuf: '0'
     minoutbuf: '0'
+    samples_per_second: samp_rate
+    type: complex
     vlen: '1'
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [744, 232.0]
+    coordinate: [776, 216.0]
     rotation: 0
     state: enabled
 - name: hackathon_decoder_0
@@ -214,13 +219,13 @@ blocks:
     maxoutbuf: '0'
     minoutbuf: '0'
     pn_length: pnlen
-    sps: '4'
-    string_input: '"Hey"'
+    sps: int(4)
+    string_input: '"Hey"*1000'
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [568, 224.0]
+    coordinate: [528, 216.0]
     rotation: 0
     state: enabled
 - name: qtgui_freq_sink_x_0
@@ -1205,10 +1210,10 @@ blocks:
 connections:
 - [blocks_float_to_complex_0, '0', qtgui_sink_x_0, '0']
 - [blocks_float_to_complex_0, '0', uhd_usrp_sink_1, '0']
-- [blocks_float_to_complex_0_0, '0', hackathon_decoder_0_0, '0']
-- [blocks_float_to_complex_0_0, '0', qtgui_sink_x_0_1, '0']
+- [blocks_throttle2_0, '0', hackathon_decoder_0_0, '0']
+- [blocks_throttle2_0, '0', qtgui_sink_x_0_1, '0']
 - [hackathon_encoder_2, '0', blocks_float_to_complex_0, '0']
-- [hackathon_encoder_2_0, '0', blocks_float_to_complex_0_0, '0']
+- [hackathon_encoder_2_0, '0', blocks_throttle2_0, '0']
 - [uhd_usrp_source_1, '0', hackathon_decoder_0, '0']
 - [uhd_usrp_source_1, '0', qtgui_sink_x_0_0, '0']
 

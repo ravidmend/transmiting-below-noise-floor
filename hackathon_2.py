@@ -60,10 +60,10 @@ class hackathon_2(gr.top_block, Qt.QWidget):
         ##################################################
         # Variables
         ##################################################
-        self.samp_rate = samp_rate = 1e6
+        self.samp_rate = samp_rate = int(1e6)
         self.tr_gain = tr_gain = 0
         self.rc_gain = rc_gain = 20
-        self.pnlen = pnlen = 1e3
+        self.pnlen = pnlen = int(1e3)
         self.center_freq = center_freq = 434e6
         self.bandwidth = bandwidth = samp_rate
 
@@ -89,17 +89,17 @@ class hackathon_2(gr.top_block, Qt.QWidget):
         self.qtgui_sink_x_0_1.enable_rf_freq(False)
 
         self.top_layout.addWidget(self._qtgui_sink_x_0_1_win)
-        self.hackathon_encoder_2_0 = hackathon.encoder("Hey", pnlen, 4, samp_rate)
+        self.hackathon_encoder_2_0 = hackathon.encoder("Hey"*1000, pnlen, int(4), samp_rate)
         self.hackathon_decoder_0_0 = hackathon.decoder(1/samp_rate, int(pnlen), int(samp_rate))
-        self.blocks_float_to_complex_0_0 = blocks.float_to_complex(1)
+        self.blocks_throttle2_0 = blocks.throttle( gr.sizeof_gr_complex*1, samp_rate, True, 0 if "auto" == "auto" else max( int(float(0.1) * samp_rate) if "auto" == "time" else int(0.1), 1) )
 
 
         ##################################################
         # Connections
         ##################################################
-        self.connect((self.blocks_float_to_complex_0_0, 0), (self.hackathon_decoder_0_0, 0))
-        self.connect((self.blocks_float_to_complex_0_0, 0), (self.qtgui_sink_x_0_1, 0))
-        self.connect((self.hackathon_encoder_2_0, 0), (self.blocks_float_to_complex_0_0, 0))
+        self.connect((self.blocks_throttle2_0, 0), (self.hackathon_decoder_0_0, 0))
+        self.connect((self.blocks_throttle2_0, 0), (self.qtgui_sink_x_0_1, 0))
+        self.connect((self.hackathon_encoder_2_0, 0), (self.blocks_throttle2_0, 0))
 
 
     def closeEvent(self, event):
@@ -116,6 +116,7 @@ class hackathon_2(gr.top_block, Qt.QWidget):
     def set_samp_rate(self, samp_rate):
         self.samp_rate = samp_rate
         self.set_bandwidth(self.samp_rate)
+        self.blocks_throttle2_0.set_sample_rate(self.samp_rate)
         self.qtgui_sink_x_0_1.set_frequency_range(0, self.samp_rate)
 
     def get_tr_gain(self):

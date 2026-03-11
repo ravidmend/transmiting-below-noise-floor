@@ -1,85 +1,125 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#
-# Copyright 2026 shira.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
-#
 
-
-import numpy 
+import numpy as np
 from gnuradio import gr
 from queue import Queue
 
+
 class encoder(gr.sync_block):
-    """
-    docstring for block encoder
-    """
-    def __init__(self, string_input, pn_length, sps, fs):
-        gr.sync_block.__init__(self,
+
+    def __init__(self, string_input, pn_len, sps, fs):
+        gr.sync_block.__init__(
+            self,
             name="encoder",
             in_sig=None,
-            out_sig=[numpy.float32, ])
-        
-        self.__sps__ = sps
-        self.__string_input__ = string_input
-        # to change: generate pn sequence based on input length and sps
-        # self.__pn__ = numpy.random.randint(0, 2, pn_length)
-        self.__pn__ = numpy.array([1]*int(pn_length)) # example pn sequence
-        self.__queue__ = Queue()
-        self.__fs__ = fs
-        
-    def modulate_info(self,string, pn, n):
-        # make string to bits
-        # string = [int(x) for x in string]
-        # string = ''.join(f'{x:08b}' for x in string)
-        # string = numpy.array([int(x) for x in string])
-        string_bytes = string.encode('ascii')
-        string = numpy.unpackbits(numpy.frombuffer(string_bytes, dtype=numpy.uint8))
+            out_sig=[np.complex64],
+        )
 
-        # add preamble
-        string = numpy.concatenate(([1, 1, 1, 1, 1], string))
-        #xor info with pn sequence
-        new_pn = numpy.tile(pn, len(string))
-        new_string = numpy.repeat(string, len(pn))
-        data_to_mod = new_string ^ new_pn
-        
-        # pulse shape
-        data_to_mod = numpy.repeat(data_to_mod, self.__sps__)
-        #print("len of info is {}".format(len(data_to_mod)))
+        self.string_input = string_input
+        self.sps = sps
+        self.fs = fs
+        self.pn_len = pn_len
+
+        np.random.seed(0)
+        self.pn = np.random.randint(0, 2, self.pn_len).astype(np.float32)
+
+        self.preamble = [1,0,1,0]
+
+        self.pn_pulse = np.repeat(self.pn, self.sps)
+        self.preamble = np.tile(self.pn_pulse, self.preamble_reps)
+
+        self.queue = Queue()
+        self.generated = False
 
 
-        # bpsk modulation: 0 -> -1, 1 -> +1:
-        data_to_mod[data_to_mod == 0] = -1
 
-        #check if queue not empty, if not, send its data and add new info
-        if not self.__queue__.empty():
-            data_to_mod = numpy.concatenate((self.__queue__.get(), data_to_mod))
+    def string_to_bits(self, string):
+        bits = []
+
+        for c in string:
+            ascii_val = ord(c)
+            bin_str = format(ascii_val, '08b')  # 8-bit ASCII
+            for b in bin_str:
+                bits.append(int(b))
+
+        return np.array(bits, dtype=np.uint8)
 
 
-        # make sure we have exactly n samples to output
-        if len(data_to_mod) < n:
-            data_to_mod = numpy.concatenate([data_to_mod, numpy.random.randint(0, 2, n - len(data_to_mod))])
-        if len(data_to_mod) > n:
-            self.__queue__.put(data_to_mod[n:])
-            data_to_mod = data_to_mod[0:n]
-            # to change
+    def spread_bits(self,data_bits, pn_bits, pn_len):  # duplicate and xor
+        # duplicate each bit n times
+        duplicated = np.repeat(data_bits, pn_len)
 
-        return data_to_mod.astype(numpy.float32)
-        
+        # repeat the PN sequence to match the length
+        pn_repeated = np.tile(pn_bits, len(duplicated) // len(pn_bits))
+
+        # XOR
+        result = np.bitwise_xor(duplicated, pn_repeated)
+
+        return result
+
+    def spread(self, bits):
+
+        symbols = 2 * bits - 1  # BPSK
+
+        chips = []
+
+        for s in symbols:
+            chips.append(s * self.pn)
+
+        chips = np.concatenate(chips)
+
+        samples = np.repeat(chips, self.sps)
+
+        return samples
+
+
+
+
+    def generate_packet(self):
+
+        bits = self.string_to_bits(self.string_input)
+
+        payload = self.spread(bits)
+
+        packet = np.concatenate([self.preamble, payload])
+
+        return packet.astype(np.complex64)
 
 
     def work(self, input_items, output_items):
-        #print("BW is {}".format(2/((1/self.__fs__)*self.__sps__)))
-        out = output_items[0]
 
-        # number of samples requested
+        out = output_items[0]
         n = len(out)
 
-        # generate random 0/1 array
-        bits = self.modulate_info(self.__string_input__, self.__pn__, n)
+        if not self.generated:
 
-        # copy to output buffer
-        out[:] = bits
+            packet = self.generate_packet()
 
-        return len(bits)
+            self.queue.put(packet)
+
+            self.generated = True
+
+
+        if self.queue.empty():
+
+            out[:] = np.zeros(n, dtype=np.complex64)
+
+            return n
+
+
+        data = self.queue.get()
+
+        if len(data) > n:
+
+            out[:] = data[:n]
+
+            self.queue.put(data[n:])
+
+        else:
+
+            out[:len(data)] = data
+            out[len(data):] = 0
+
+
+        return n
