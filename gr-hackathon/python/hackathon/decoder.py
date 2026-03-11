@@ -19,7 +19,7 @@ class decoder(gr.sync_block):
         self.Ts = Ts
         self.fs = fs
 
-        sps = 2
+        sps = 4
         preamble_reps = 5
 
         self.sps = sps
