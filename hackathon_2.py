@@ -60,8 +60,8 @@ class hackathon_2(gr.top_block, Qt.QWidget):
         # Variables
         ##################################################
         self.samp_rate = samp_rate = int(1e6)
-        self.tr_gain = tr_gain = 30
-        self.sps = sps = int(4)
+        self.tr_gain = tr_gain = 20
+        self.sps = sps = int(2)
         self.rc_gain = rc_gain = 20
         self.pn_len = pn_len = int(1e3)
         self.center_freq = center_freq = 434e6
@@ -71,8 +71,8 @@ class hackathon_2(gr.top_block, Qt.QWidget):
         # Blocks
         ##################################################
 
-        self.hackathon_encoder_2_0 = hackathon.encoder("Hey"*1000, pn_len, sps)
-        self.hackathon_decoder_0_0 = hackathon.decoder(pn_len, sps, 1)
+        self.hackathon_encoder_2_0 = hackathon.encoder("123"*100, pn_len, sps)
+        self.hackathon_decoder_0_0 = hackathon.decoder(pn_len, sps, 0.02)
         self.blocks_throttle2_0 = blocks.throttle( gr.sizeof_gr_complex*1, samp_rate, True, 0 if "auto" == "auto" else max( int(float(0.1) * samp_rate) if "auto" == "time" else int(0.1), 1) )
 
 
