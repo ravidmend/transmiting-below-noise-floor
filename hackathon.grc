@@ -57,6 +57,18 @@ blocks:
     coordinate: [288, 8.0]
     rotation: 0
     state: enabled
+- name: pnlen
+  id: variable
+  parameters:
+    comment: ''
+    value: 1e3
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [640, 8.0]
+    rotation: 0
+    state: enabled
 - name: rc_gain
   id: variable
   parameters:
@@ -125,45 +137,22 @@ blocks:
     coordinate: [848, 88.0]
     rotation: 0
     state: enabled
-- name: blocks_throttle2_1
-  id: blocks_throttle2
-  parameters:
-    affinity: ''
-    alias: ''
-    comment: ''
-    ignoretag: 'True'
-    limit: auto
-    maximum: '0.1'
-    maxoutbuf: '0'
-    minoutbuf: '0'
-    samples_per_second: samp_rate
-    type: complex
-    vlen: '1'
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [408, 312.0]
-    rotation: 0
-    state: disabled
 - name: hackathon_decoder_0
   id: hackathon_decoder
   parameters:
+    Ts: 1/samp_rate
     affinity: ''
     alias: ''
     comment: ''
-    p0: '1'
-    p1: '1'
-    p2: '1'
-    p3: '1'
-    p4: '1'
+    fs: int(samp_rate)
+    pn_len: int(pnlen)
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [824, 432.0]
+    coordinate: [416, 416.0]
     rotation: 0
-    state: disabled
+    state: enabled
 - name: hackathon_encoder_2
   id: hackathon_encoder
   parameters:
@@ -173,14 +162,14 @@ blocks:
     fs: samp_rate
     maxoutbuf: '0'
     minoutbuf: '0'
-    pn_length: '1000'
-    sps: '4'
+    pn_length: pnlen
+    sps: '20'
     string_input: '"Hye"'
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [552, 80.0]
+    coordinate: [680, 88.0]
     rotation: 0
     state: enabled
 - name: qtgui_freq_sink_x_0
@@ -305,7 +294,7 @@ blocks:
     gui_hint: ''
     maxoutbuf: '0'
     minoutbuf: '0'
-    name: '"rec"'
+    name: '"tran"'
     plotconst: 'True'
     plotfreq: 'True'
     plottime: 'True'
@@ -319,7 +308,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [608, 216.0]
+    coordinate: [400, 216.0]
     rotation: 0
     state: enabled
 - name: qtgui_time_sink_x_0_0
@@ -1136,9 +1125,8 @@ blocks:
 connections:
 - [blocks_float_to_complex_0, '0', qtgui_sink_x_0, '0']
 - [blocks_float_to_complex_0, '0', uhd_usrp_sink_1, '0']
-- [blocks_throttle2_1, '0', qtgui_sink_x_0_0, '0']
 - [hackathon_encoder_2, '0', blocks_float_to_complex_0, '0']
-- [uhd_usrp_source_1, '0', blocks_throttle2_1, '0']
+- [uhd_usrp_source_1, '0', hackathon_decoder_0, '0']
 - [uhd_usrp_source_1, '0', qtgui_sink_x_0_0, '0']
 
 metadata:

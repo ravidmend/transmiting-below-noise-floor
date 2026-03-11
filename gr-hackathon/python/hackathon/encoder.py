@@ -25,7 +25,7 @@ class encoder(gr.sync_block):
         self.__string_input__ = string_input
         # to change: generate pn sequence based on input length and sps
         # self.__pn__ = numpy.random.randint(0, 2, pn_length)
-        self.__pn__ = numpy.array([1]*pn_length) # example pn sequence
+        self.__pn__ = numpy.array([1]*int(pn_length)) # example pn sequence
         self.__queue__ = Queue()
         self.__fs__ = fs
         
@@ -70,7 +70,7 @@ class encoder(gr.sync_block):
 
 
     def work(self, input_items, output_items):
-        print("BW is {}".format(2/((1/self.__fs__)*self.__sps__)))
+        #print("BW is {}".format(2/((1/self.__fs__)*self.__sps__)))
         out = output_items[0]
 
         # number of samples requested
