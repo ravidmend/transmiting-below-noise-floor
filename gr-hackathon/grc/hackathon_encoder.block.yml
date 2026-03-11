@@ -4,7 +4,7 @@ category: '[hackathon]'
 
 templates:
   imports: from gnuradio import hackathon
-  make: hackathon.encoder()
+  make: hackathon.encoder(${string_input}, ${pn_length}, ${sps}, ${fs})
 
 #  Make one 'parameters' list entry for every parameter you want settable from the GUI.
 #     Keys include:
@@ -12,8 +12,19 @@ templates:
 #     * label (label shown in the GUI)
 #     * dtype (e.g. int, float, complex, byte, short, xxx_vector, ...)
 #     * default
-# parameters:
-# - id: p0
+parameters:
+- id: string_input
+  label: string_input
+  dtype: string
+- id: pn_length
+  label: pn
+  dtype: float
+- id: sps         
+  label: sps
+  dtype: float
+- id: fs
+  label: fs
+  dtype: float
 #   label: string_input
 #   dtype: float
 # - id: p1
@@ -54,6 +65,6 @@ outputs:
 #  vlen: ...
 #  optional: ...
 
-#  'file_format' specifies the version of the GRC yml format used in the file
+#  'file_format        ' specifies the version of the GRC yml format used in the file
 #  and should usually not be changed.
 file_format: 1

@@ -63,7 +63,7 @@ class hackathon_2(gr.top_block, Qt.QWidget):
         # Variables
         ##################################################
         self.samp_rate = samp_rate = 1e6
-        self.tr_gain = tr_gain = 30
+        self.tr_gain = tr_gain = 0
         self.rc_gain = rc_gain = 20
         self.center_freq = center_freq = 434e6
         self.bandwidth = bandwidth = samp_rate
@@ -137,18 +137,16 @@ class hackathon_2(gr.top_block, Qt.QWidget):
         self.qtgui_sink_x_0.enable_rf_freq(False)
 
         self.top_layout.addWidget(self._qtgui_sink_x_0_win)
-        self.hackathon_encoder_0 = hackathon.encoder()
-        self.blocks_throttle2_0 = blocks.throttle( gr.sizeof_gr_complex*1, samp_rate, True, 0 if "auto" == "auto" else max( int(float(0.1) * samp_rate) if "auto" == "time" else int(0.1), 1) )
+        self.hackathon_encoder_2 = hackathon.encoder("Hye", 1000, 4, samp_rate)
         self.blocks_float_to_complex_0 = blocks.float_to_complex(1)
 
 
         ##################################################
         # Connections
         ##################################################
-        self.connect((self.blocks_float_to_complex_0, 0), (self.blocks_throttle2_0, 0))
+        self.connect((self.blocks_float_to_complex_0, 0), (self.qtgui_sink_x_0, 0))
         self.connect((self.blocks_float_to_complex_0, 0), (self.uhd_usrp_sink_1, 0))
-        self.connect((self.blocks_throttle2_0, 0), (self.qtgui_sink_x_0, 0))
-        self.connect((self.hackathon_encoder_0, 0), (self.blocks_float_to_complex_0, 0))
+        self.connect((self.hackathon_encoder_2, 0), (self.blocks_float_to_complex_0, 0))
         self.connect((self.uhd_usrp_source_1, 0), (self.qtgui_sink_x_0_0, 0))
 
 
@@ -166,7 +164,6 @@ class hackathon_2(gr.top_block, Qt.QWidget):
     def set_samp_rate(self, samp_rate):
         self.samp_rate = samp_rate
         self.set_bandwidth(self.samp_rate)
-        self.blocks_throttle2_0.set_sample_rate(self.samp_rate)
         self.qtgui_sink_x_0.set_frequency_range(0, self.samp_rate)
         self.qtgui_sink_x_0_0.set_frequency_range(0, self.samp_rate)
         self.uhd_usrp_sink_1.set_samp_rate(self.samp_rate)
