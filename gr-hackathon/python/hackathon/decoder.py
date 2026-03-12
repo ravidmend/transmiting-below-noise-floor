@@ -21,10 +21,10 @@ class decoder(gr.sync_block):
         self.recived_amp = recived_amp
 
         # Preamble as bits
-        preamble_bits = np.array([1,0,1,0], dtype=np.uint8)
+        preamble_bits = np.array([1,1,1,0,1,0,1,0], dtype=np.uint8)
 
         # PN sequence as integers (needed for bitwise operations)
-        np.random.seed(0)
+        np.random.seed(42)
         pn = np.random.randint(0, 2, pn_len).astype(np.uint8)
         self.pn_bits = pn
 
@@ -63,6 +63,7 @@ class decoder(gr.sync_block):
         peak = np.max(abs_corr)
         threshold = 0.8 * self.recived_amp * self.preamble_len
         threshold = 40000
+        threshold = 7000
         print(f"Correlation peak: {peak:.2f}, Threshold: {threshold:.2f}")
         if peak > threshold:
             idx = np.argmax(abs_corr)
@@ -108,7 +109,7 @@ class decoder(gr.sync_block):
         sym = self.buffer[:self.symbol_len]
         val = np.vdot(self.pn, sym)
 
-        if np.abs(val) > 0.5 * self.recived_amp * self.symbol_len:
+        if np.abs(val) > 1:
             return False
 
         print("TIMEOUT")
@@ -162,10 +163,10 @@ class decoder(gr.sync_block):
         return len(in0)
 
 
-#!/usr/bin/env python
+# !/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-#!/usr/bin/env python
+# !/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # import numpy as np
@@ -196,7 +197,7 @@ class decoder(gr.sync_block):
 #         self.buffer = np.array([], dtype=np.complex64)
 
 #         # --- Preamble bits ---
-#         preamble_bits = np.array([1,0,1,0], dtype=np.uint8)
+#         preamble_bits = np.array([1,1,1,0,1,0,1,0], dtype=np.uint8)
 
 #         # --- PN sequence ---
 #         np.random.seed(0)

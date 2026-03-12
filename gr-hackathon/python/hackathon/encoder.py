@@ -11,11 +11,11 @@ class encoder(gr.sync_block):
             out_sig=[np.complex64],
         )
 
-        np.random.seed(0)
+        np.random.seed(42)
         # Use integer type for PN sequence
         pn = np.random.randint(0, 2, pn_len).astype(np.uint8)
 
-        preamble = [1,0,1,0]
+        preamble = [1,1,1,0,1,0,1,0]
 
         bits_to_send = np.concatenate([preamble, self.string_to_bits(string_input)])
 

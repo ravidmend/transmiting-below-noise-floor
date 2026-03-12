@@ -61,7 +61,7 @@ blocks:
   id: variable
   parameters:
     comment: ''
-    value: int(1e3)
+    value: int(1e2)
   states:
     bus_sink: false
     bus_source: false
