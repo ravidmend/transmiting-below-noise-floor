@@ -14,11 +14,13 @@ from gnuradio import gr
 
 class decoder(gr.sync_block):
     """
-    Decoder for the given encoder.
-    Input: float32 stream from the encoder
-    Output: no output (sink) - prints recovered string
+    Decoder with preamble detection.
+    Expected preamble: [1,1,1,1,1]
+    Input: float32 stream from encoder
+    Output: no output, prints decoded message
     """
-    def __init__(self, pn_length, sps, msg_len):
+
+    def __init__(self, pn_length, sps, msg_len, thresh=6):
         gr.sync_block.__init__(
             self,
             name="decoder",
@@ -26,59 +28,57 @@ class decoder(gr.sync_block):
             out_sig=None
         )
 
+        self.__thresh__ = thresh
         self.pn_length = int(pn_length)
         self.sps = int(sps)
         self.msg_len = int(msg_len)
 
         # Must match encoder exactly
-        self.pn_bits = np.array([1] * self.pn_length, dtype=np.uint8)
-        self.preamble_bits = np.array([1, 1, 1, 1, 1], dtype=np.uint8)
+        np.random.seed(0)
+        self.pn_bits = np.random.randint(0, 2, self.pn_length)
+        
 
-        # Internal buffer
+        # Preamble = five 1s
+        self.preamble_bits = np.array([1, 0, 0, 1, 1, 0, 1, 1, 1], dtype=np.uint8)
+
+        # Buffer for incoming samples
         self.buffer = np.array([], dtype=np.float32)
 
-        # Decoder state
+        # State
         self.detected = False
         self.done = False
         self.bit_buffer = []
         self.char_buffer = ""
 
-        # Build symbol templates
-        # Encoder does:
-        # spread_bit = bit XOR pn_bit
-        # then 0 -> -1, 1 -> +1
-        #
-        # So template for bit=0 is:
-        #   bpsk(pn_bits)
-        #
-        # template for bit=1 is:
-        #   negative of that
-        self.symbol0 = self.build_symbol_template(bit=0)
-        self.symbol1 = self.build_symbol_template(bit=1)
+        # Build reference symbol waveforms
+        self.symbol0 = self.build_symbol_template(0)
+        self.symbol1 = self.build_symbol_template(1)
 
         self.symbol_len = len(self.symbol0)
 
-        # Preamble waveform = 5 symbols of bit=1
+        # Full waveform of the preamble
         self.preamble_waveform = np.tile(self.symbol1, len(self.preamble_bits))
         self.preamble_len = len(self.preamble_waveform)
 
     def build_symbol_template(self, bit):
-        # Spread one bit with PN exactly like encoder
-        bit_array = np.array([bit], dtype=np.uint8)
+        """
+        Build exactly the same waveform the encoder creates for one bit.
+        """
+        bit_arr = np.array([bit], dtype=np.uint8)
 
-        repeated_bit = np.repeat(bit_array, self.pn_length)
+        repeated_bit = np.repeat(bit_arr, self.pn_length)
         spread_bits = repeated_bit ^ self.pn_bits
 
-        # BPSK map: 0 -> -1, 1 -> +1
         bpsk = spread_bits.astype(np.float32)
         bpsk[bpsk == 0] = -1.0
 
-        # Rectangular pulse shaping
         pulse = np.repeat(bpsk, self.sps).astype(np.float32)
-
         return pulse
 
     def detect_preamble(self):
+        """
+        Search for preamble in the buffer using correlation.
+        """
         if len(self.buffer) < self.preamble_len:
             return False
 
@@ -87,34 +87,35 @@ class decoder(gr.sync_block):
 
         idx = int(np.argmax(abs_corr))
         peak = abs_corr[idx]
-        
+        print(f"[decoder] preamble correlation peak: {peak:.2f} at index {idx}")
 
-        # In noiseless/direct connection this should be very large
-        # compared to mismatches, so a simple threshold works
+        # Simple threshold
         thresh = 0.8 * np.sum(self.preamble_waveform ** 2)
-        thresh = 6
-        if peak >= thresh:
-            print(f"[decoder] preamble correlation peak: {peak:.2f} at index {idx}")
-            print("[decoder] PREAMBLE DETECTED")
+        thresh = self.__thresh__
 
-            # Remove everything up to the end of the preamble
+        if peak >= thresh:
+            print(f"[decoder] PREAMBLE DETECTED at index {idx}, peak={peak:.2f}")
+
+            # Remove samples up to the end of the preamble
             self.buffer = self.buffer[idx + self.preamble_len:]
             return True
 
-        # Keep only enough trailing samples
+        # Keep only enough trailing samples so buffer does not grow forever
         if len(self.buffer) > self.preamble_len:
             self.buffer = self.buffer[-self.preamble_len:]
 
         return False
 
     def decode_one_bit(self):
+        """
+        Decode one spread symbol from buffer.
+        """
         if len(self.buffer) < self.symbol_len:
             return None
 
         sym = self.buffer[:self.symbol_len]
         self.buffer = self.buffer[self.symbol_len:]
 
-        # Compare correlation with bit-0 and bit-1 templates
         score0 = np.dot(sym, self.symbol0)
         score1 = np.dot(sym, self.symbol1)
 
@@ -129,47 +130,229 @@ class decoder(gr.sync_block):
             for b in self.bit_buffer:
                 value = (value << 1) | b
 
-            char = chr(value)
+            # ASCII only
+            if 32 <= value <= 126:
+                char = chr(value)
+            else:
+                char = '?'
+
+            print(f"[decoder] bits: {self.bit_buffer}")
+            print(f"[decoder] byte: {value} ({format(value, '08b')})")
+            print(f"[decoder] char: {char}")
+
             self.char_buffer += char
             self.bit_buffer = []
 
-            print(f"[decoder] char detected: {char}")
             print(f"[decoder] message so far: {self.char_buffer}")
 
-            if len(self.char_buffer) == self.msg_len:
-                print(f"\n[decoder] FINAL MESSAGE: {self.char_buffer}\n")
+            if len(self.char_buffer) >= self.msg_len:
+                print(f"\n[decoder] FINAL MESSAGE: {self.char_buffer[:self.msg_len]}\n")
                 self.done = True
 
     def work(self, input_items, output_items):
-        
         in0 = input_items[0]
 
         if self.done:
             return len(in0)
 
-        # Append incoming samples
+        # Add new samples to buffer
         self.buffer = np.concatenate((self.buffer, in0))
 
         while True:
-            # print(2)
             if not self.detected:
                 if not self.detect_preamble():
                     break
                 self.detected = True
 
-            print(3)
             bit = self.decode_one_bit()
-            print(f"[decoder] decoded bit: {bit}")
             if bit is None:
                 break
 
-            #print(f"[decoder] bit: {bit}")
+            print(f"[decoder] decoded bit: {bit}")
             self.process_bit(bit)
 
             if self.done:
                 break
 
         return len(in0)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# import numpy as np
+# from gnuradio import gr
+
+
+# class decoder(gr.sync_block):
+#     """
+#     Decoder for the given encoder.
+#     Input: float32 stream from the encoder
+#     Output: no output (sink) - prints recovered string
+#     """
+#     def __init__(self, pn_length, sps, msg_len):
+#         gr.sync_block.__init__(
+#             self,
+#             name="decoder",
+#             in_sig=[np.float32],
+#             out_sig=None
+#         )
+
+#         self.pn_length = int(pn_length)
+#         self.sps = int(sps)
+#         self.msg_len = int(msg_len)
+
+#         # Must match encoder exactly
+#         self.pn_bits = np.array([1] * self.pn_length, dtype=np.uint8)
+#         self.preamble_bits = np.array([1, 1, 1, 1, 1], dtype=np.uint8)
+
+#         # Internal buffer
+#         self.buffer = np.array([], dtype=np.float32)
+
+#         # Decoder state
+#         self.detected = False
+#         self.done = False
+#         self.bit_buffer = []
+#         self.char_buffer = ""
+
+#         # Build symbol templates
+#         # Encoder does:
+#         # spread_bit = bit XOR pn_bit
+#         # then 0 -> -1, 1 -> +1
+#         #
+#         # So template for bit=0 is:
+#         #   bpsk(pn_bits)
+#         #
+#         # template for bit=1 is:
+#         #   negative of that
+#         self.symbol0 = self.build_symbol_template(bit=0)
+#         self.symbol1 = self.build_symbol_template(bit=1)
+
+#         self.symbol_len = len(self.symbol0)
+
+#         # Preamble waveform = 5 symbols of bit=1
+#         self.preamble_waveform = np.tile(self.symbol1, len(self.preamble_bits))
+#         self.preamble_len = len(self.preamble_waveform)
+
+#     def build_symbol_template(self, bit):
+#         # Spread one bit with PN exactly like encoder
+#         bit_array = np.array([bit], dtype=np.uint8)
+
+#         repeated_bit = np.repeat(bit_array, self.pn_length)
+#         spread_bits = repeated_bit ^ self.pn_bits
+
+#         # BPSK map: 0 -> -1, 1 -> +1
+#         bpsk = spread_bits.astype(np.float32)
+#         bpsk[bpsk == 0] = -1.0
+
+#         # Rectangular pulse shaping
+#         pulse = np.repeat(bpsk, self.sps).astype(np.float32)
+
+#         return pulse
+
+#     def detect_preamble(self):
+#         if len(self.buffer) < self.preamble_len:
+#             return False
+
+#         corr = np.correlate(self.buffer, self.preamble_waveform, mode='valid')
+#         abs_corr = np.abs(corr)
+
+#         idx = int(np.argmax(abs_corr))
+#         peak = abs_corr[idx]
+        
+
+#         # In noiseless/direct connection this should be very large
+#         # compared to mismatches, so a simple threshold works
+#         thresh = 0.8 * np.sum(self.preamble_waveform ** 2)
+#         thresh = 6
+#         if peak >= thresh:
+#             print(f"[decoder] preamble correlation peak: {peak:.2f} at index {idx}")
+#             print("[decoder] PREAMBLE DETECTED")
+
+#             # Remove everything up to the end of the preamble
+#             self.buffer = self.buffer[idx + self.preamble_len:]
+#             return True
+
+#         # Keep only enough trailing samples
+#         if len(self.buffer) > self.preamble_len:
+#             self.buffer = self.buffer[-self.preamble_len:]
+
+#         return False
+
+#     def decode_one_bit(self):
+#         if len(self.buffer) < self.symbol_len:
+#             return None
+
+#         sym = self.buffer[:self.symbol_len]
+#         self.buffer = self.buffer[self.symbol_len:]
+
+#         # Compare correlation with bit-0 and bit-1 templates
+#         score0 = np.dot(sym, self.symbol0)
+#         score1 = np.dot(sym, self.symbol1)
+
+#         bit = 0 if score0 > score1 else 1
+#         return bit
+
+#     def process_bit(self, bit):
+#         self.bit_buffer.append(bit)
+
+#         if len(self.bit_buffer) == 8:
+#             value = 0
+#             for b in self.bit_buffer:
+#                 value = (value << 1) | b
+
+#             char = chr(value)
+#             self.char_buffer += char
+#             self.bit_buffer = []
+
+#             print(f"[decoder] char detected: {char}")
+#             print(f"[decoder] message so far: {self.char_buffer}")
+
+#             if len(self.char_buffer) == self.msg_len:
+#                 print(f"\n[decoder] FINAL MESSAGE: {self.char_buffer}\n")
+#                 self.done = True
+
+#     def work(self, input_items, output_items):
+        
+#         in0 = input_items[0]
+
+#         if self.done:
+#             return len(in0)
+
+#         # Append incoming samples
+#         self.buffer = np.concatenate((self.buffer, in0))
+
+#         while True:
+#             # print(2)
+#             if not self.detected:
+#                 if not self.detect_preamble():
+#                     break
+#                 self.detected = True
+
+#             print(3)
+#             bit = self.decode_one_bit()
+#             print(f"[decoder] decoded bit: {bit}")
+#             if bit is None:
+#                 break
+
+#             #print(f"[decoder] bit: {bit}")
+#             self.process_bit(bit)
+
+#             if self.done:
+#                 break
+
+#         return len(in0)
 
 
 

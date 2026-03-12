@@ -23,6 +23,7 @@ from gnuradio import eng_notation
 from gnuradio import hackathon
 from gnuradio import uhd
 import time
+import sip
 
 
 
@@ -61,11 +62,11 @@ class hackathon_2(gr.top_block, Qt.QWidget):
         ##################################################
         # Variables
         ##################################################
-        self.samp_rate = samp_rate = 1e6
+        self.samp_rate = samp_rate = 500e3
         self.tr_gain = tr_gain = 30
         self.sps = sps = 4
         self.rc_gain = rc_gain = 20
-        self.pnlen = pnlen = 1e2
+        self.pnlen = pnlen = 1e3
         self.center_freq = center_freq = 434e6
         self.bandwidth = bandwidth = samp_rate
 
@@ -102,8 +103,45 @@ class hackathon_2(gr.top_block, Qt.QWidget):
         self.uhd_usrp_sink_1.set_center_freq(center_freq, 0)
         self.uhd_usrp_sink_1.set_antenna("TX/RX", 0)
         self.uhd_usrp_sink_1.set_gain(tr_gain, 0)
-        self.hackathon_encoder_2 = hackathon.encoder("AAA", pnlen, sps, samp_rate)
-        self.hackathon_decoder_0_0 = hackathon.decoder(pnlen, sps, 10)
+        self.qtgui_sink_x_0_0 = qtgui.sink_c(
+            1024, #fftsize
+            window.WIN_BLACKMAN_hARRIS, #wintype
+            0, #fc
+            samp_rate, #bw
+            "tran", #name
+            True, #plotfreq
+            True, #plotwaterfall
+            True, #plottime
+            True, #plotconst
+            None # parent
+        )
+        self.qtgui_sink_x_0_0.set_update_time(1.0/10)
+        self._qtgui_sink_x_0_0_win = sip.wrapinstance(self.qtgui_sink_x_0_0.qwidget(), Qt.QWidget)
+
+        self.qtgui_sink_x_0_0.enable_rf_freq(False)
+
+        self.top_layout.addWidget(self._qtgui_sink_x_0_0_win)
+        self.qtgui_sink_x_0 = qtgui.sink_c(
+            1024, #fftsize
+            window.WIN_BLACKMAN_hARRIS, #wintype
+            0, #fc
+            samp_rate, #bw
+            "tran", #name
+            True, #plotfreq
+            True, #plotwaterfall
+            True, #plottime
+            True, #plotconst
+            None # parent
+        )
+        self.qtgui_sink_x_0.set_update_time(1.0/10)
+        self._qtgui_sink_x_0_win = sip.wrapinstance(self.qtgui_sink_x_0.qwidget(), Qt.QWidget)
+
+        self.qtgui_sink_x_0.enable_rf_freq(False)
+
+        self.top_layout.addWidget(self._qtgui_sink_x_0_win)
+        self.hackathon_encoder_2 = hackathon.encoder("Hye", pnlen, sps, samp_rate)
+        self.hackathon_decoder_0_0 = hackathon.decoder(pnlen, sps, 20, 7)
+        self.blocks_multiply_const_xx_0 = blocks.multiply_const_cc(100, 1)
         self.blocks_float_to_complex_0 = blocks.float_to_complex(1)
         self.blocks_complex_to_float_0 = blocks.complex_to_float(1)
 
@@ -112,9 +150,12 @@ class hackathon_2(gr.top_block, Qt.QWidget):
         # Connections
         ##################################################
         self.connect((self.blocks_complex_to_float_0, 0), (self.hackathon_decoder_0_0, 0))
+        self.connect((self.blocks_float_to_complex_0, 0), (self.qtgui_sink_x_0_0, 0))
         self.connect((self.blocks_float_to_complex_0, 0), (self.uhd_usrp_sink_1, 0))
+        self.connect((self.blocks_multiply_const_xx_0, 0), (self.blocks_complex_to_float_0, 0))
+        self.connect((self.blocks_multiply_const_xx_0, 0), (self.qtgui_sink_x_0, 0))
         self.connect((self.hackathon_encoder_2, 0), (self.blocks_float_to_complex_0, 0))
-        self.connect((self.uhd_usrp_source_1, 0), (self.blocks_complex_to_float_0, 0))
+        self.connect((self.uhd_usrp_source_1, 0), (self.blocks_multiply_const_xx_0, 0))
 
 
     def closeEvent(self, event):
@@ -131,6 +172,8 @@ class hackathon_2(gr.top_block, Qt.QWidget):
     def set_samp_rate(self, samp_rate):
         self.samp_rate = samp_rate
         self.set_bandwidth(self.samp_rate)
+        self.qtgui_sink_x_0.set_frequency_range(0, self.samp_rate)
+        self.qtgui_sink_x_0_0.set_frequency_range(0, self.samp_rate)
         self.uhd_usrp_sink_1.set_samp_rate(self.samp_rate)
         self.uhd_usrp_source_1.set_samp_rate(self.samp_rate)
 

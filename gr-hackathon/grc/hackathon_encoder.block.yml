@@ -18,7 +18,7 @@ parameters:
   dtype: string
 - id: pn_length
   label: pn
-  dtype: float
+  dtype: int
 - id: sps         
   label: sps
   dtype: float

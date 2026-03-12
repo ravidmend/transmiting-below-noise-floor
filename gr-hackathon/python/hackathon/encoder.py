@@ -25,7 +25,9 @@ class encoder(gr.sync_block):
         self.__string_input__ = string_input
         # to change: generate pn sequence based on input length and sps
         # self.__pn__ = numpy.random.randint(0, 2, pn_length)
-        self.__pn__ = numpy.array([1]*int(pn_length)) # example pn sequence
+        #self.__pn__ = numpy.array([1]*int(pn_length)) # example pn sequence
+        numpy.random.seed(0)
+        self.__pn__ = numpy.random.randint(0, 2, pn_length) #shira, i dont know if it should be float32 or int8, rela# random pn sequence
         self.__queue__ = Queue()
         self.__fs__ = fs
         
@@ -38,7 +40,7 @@ class encoder(gr.sync_block):
         string = numpy.unpackbits(numpy.frombuffer(string_bytes, dtype=numpy.uint8))
 
         # add preamble
-        string = numpy.concatenate(([1, 1, 1, 1, 1], string))
+        string = numpy.concatenate(([1, 0, 0, 1, 1, 0, 1, 1, 1], string))
         #xor info with pn sequence
         new_pn = numpy.tile(pn, len(string))
         new_string = numpy.repeat(string, len(pn))
@@ -60,7 +62,8 @@ class encoder(gr.sync_block):
         # make sure we have exactly n samples to output
         if len(data_to_mod) < n:
             #data_to_mod = numpy.concatenate([data_to_mod, numpy.random.randint(0, 2, n - len(data_to_mod))])
-            data_to_mod = numpy.concatenate([data_to_mod, -1 * numpy.ones(n - len(data_to_mod))]) # pad with -1 (no signal)
+            #data_to_mod = numpy.concatenate([data_to_mod, -1 * numpy.ones(n - len(data_to_mod))]) # pad with -1 (no signal)
+            data_to_mod  = data_to_mod*10000
         if len(data_to_mod) > n:
             self.__queue__.put(data_to_mod[n:])
             data_to_mod = data_to_mod[0:n]
@@ -82,5 +85,5 @@ class encoder(gr.sync_block):
 
         # copy to output buffer
         out[:] = bits
-
+        
         return len(bits)
