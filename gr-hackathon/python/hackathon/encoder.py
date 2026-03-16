@@ -15,7 +15,7 @@ class encoder(gr.sync_block):
     """
     docstring for block encoder
     """
-    def __init__(self, string_input, pn_length, sps, fs):
+    def __init__(self, string_input, pn_length, sps, fs, key=0):
         gr.sync_block.__init__(self,
             name="encoder",
             in_sig=None,
@@ -26,7 +26,7 @@ class encoder(gr.sync_block):
         # to change: generate pn sequence based on input length and sps
         # self.__pn__ = numpy.random.randint(0, 2, pn_length)
         #self.__pn__ = numpy.array([1]*int(pn_length)) # example pn sequence
-        numpy.random.seed(0)
+        numpy.random.seed(key)
         self.__pn__ = numpy.random.randint(0, 2, pn_length) #shira, i dont know if it should be float32 or int8, rela# random pn sequence
         self.__queue__ = Queue()
         self.__fs__ = fs

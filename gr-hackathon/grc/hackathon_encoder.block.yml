@@ -4,7 +4,7 @@ category: '[hackathon]'
 
 templates:
   imports: from gnuradio import hackathon
-  make: hackathon.encoder(${string_input}, ${pn_length}, ${sps}, ${fs})
+  make: hackathon.encoder(${string_input}, ${pn_length}, ${sps}, ${fs}, ${key})
 
 #  Make one 'parameters' list entry for every parameter you want settable from the GUI.
 #     Keys include:
@@ -25,6 +25,9 @@ parameters:
 - id: fs
   label: fs
   dtype: float
+- id: key
+  label: key
+  dtype: int
 #   label: string_input
 #   dtype: float
 # - id: p1

@@ -117,6 +117,29 @@ blocks:
     coordinate: [392, 8.0]
     rotation: 0
     state: enabled
+- name: analog_sig_source_x_0
+  id: analog_sig_source_x
+  parameters:
+    affinity: ''
+    alias: ''
+    amp: '1'
+    comment: ''
+    freq: '5000'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    offset: '0'
+    phase: '0'
+    samp_rate: samp_rate
+    showports: 'False'
+    type: complex
+    waveform: analog.GR_COS_WAVE
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [632, 104.0]
+    rotation: 0
+    state: enabled
 - name: blocks_complex_to_float_0
   id: blocks_complex_to_float
   parameters:
@@ -168,14 +191,14 @@ blocks:
     bus_structure: null
     coordinate: [616, 104.0]
     rotation: 0
-    state: enabled
+    state: disabled
 - name: blocks_multiply_const_xx_0
   id: blocks_multiply_const_xx
   parameters:
     affinity: ''
     alias: ''
     comment: ''
-    const: '100'
+    const: '1'
     maxoutbuf: '0'
     minoutbuf: '0'
     type: complex
@@ -235,6 +258,7 @@ blocks:
     affinity: ''
     alias: ''
     comment: ''
+    key: '0'
     msg_len: '20'
     pn_length: pnlen
     sps: sps
@@ -243,26 +267,9 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1088, 368.0]
+    coordinate: [1136, 280.0]
     rotation: 0
     state: enabled
-- name: hackathon_decoder_0_0_0
-  id: hackathon_decoder
-  parameters:
-    affinity: ''
-    alias: ''
-    comment: ''
-    msg_len: '15'
-    pn_length: pnlen
-    sps: sps
-    thresh: ''
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [480, 200.0]
-    rotation: 0
-    state: disabled
 - name: hackathon_encoder_2
   id: hackathon_encoder
   parameters:
@@ -270,9 +277,10 @@ blocks:
     alias: ''
     comment: ''
     fs: samp_rate
+    key: '0'
     maxoutbuf: '0'
     minoutbuf: '0'
-    pn_length: pnlen
+    pn_length: int(pnlen)
     sps: sps
     string_input: '"Hye"'
   states:
@@ -281,7 +289,7 @@ blocks:
     bus_structure: null
     coordinate: [384, 120.0]
     rotation: 0
-    state: enabled
+    state: disabled
 - name: hackathon_encoder_2_0
   id: hackathon_encoder
   parameters:
@@ -289,6 +297,7 @@ blocks:
     alias: ''
     comment: ''
     fs: samp_rate
+    key: ''
     maxoutbuf: '0'
     minoutbuf: '0'
     pn_length: pnlen
@@ -1074,8 +1083,9 @@ blocks:
     state: enabled
 
 connections:
+- [analog_sig_source_x_0, '0', qtgui_sink_x_0_0, '0']
+- [analog_sig_source_x_0, '0', uhd_usrp_sink_1, '0']
 - [blocks_complex_to_float_0, '0', hackathon_decoder_0_0, '0']
-- [blocks_delay_0, '0', hackathon_decoder_0_0_0, '0']
 - [blocks_float_to_complex_0, '0', qtgui_sink_x_0_0, '0']
 - [blocks_float_to_complex_0, '0', uhd_usrp_sink_1, '0']
 - [blocks_multiply_const_xx_0, '0', blocks_complex_to_float_0, '0']

@@ -20,7 +20,7 @@ class decoder(gr.sync_block):
     Output: no output, prints decoded message
     """
 
-    def __init__(self, pn_length, sps, msg_len, thresh=6):
+    def __init__(self, pn_length, sps, msg_len, thresh=6, key=0):
         gr.sync_block.__init__(
             self,
             name="decoder",
@@ -34,8 +34,9 @@ class decoder(gr.sync_block):
         self.msg_len = int(msg_len)
 
         # Must match encoder exactly
-        np.random.seed(0)
-        self.pn_bits = np.random.randint(0, 2, self.pn_length)
+        #key = 
+        np.random.seed(key)
+        self.pn_bits = np.random.randint(0, 2, self.pn_length).astype(np.float32) 
         
 
         # Preamble = five 1s
@@ -67,7 +68,7 @@ class decoder(gr.sync_block):
         bit_arr = np.array([bit], dtype=np.uint8)
 
         repeated_bit = np.repeat(bit_arr, self.pn_length)
-        spread_bits = repeated_bit ^ self.pn_bits
+        spread_bits = np.logical_xor(repeated_bit, self.pn_bits)
 
         bpsk = spread_bits.astype(np.float32)
         bpsk[bpsk == 0] = -1.0
